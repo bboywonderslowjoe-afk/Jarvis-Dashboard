@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#050b14">
+<title>JARVIS | Personal AI</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#050b14;color:#d9f7ff;
+ font-family:Arial,sans-serif;min-height:100vh;
+ display:flex;justify-content:center;text-align:center;
+}
+main{width:100%;max-width:520px;padding:26px 20px}
+.tag{letter-spacing:4px;color:#51dfff;font-size:12px}
+h1{font-size:27px;letter-spacing:5px;margin:12px 0 5px}
+#clock{font-size:34px;font-weight:300;margin-top:25px}
+#date{color:#8ba9bb;font-size:13px;margin-top:6px}
+.core{
+ width:210px;height:210px;border-radius:50%;
+ border:1px solid #31dfff;margin:35px auto 25px;
+ display:grid;place-items:center;cursor:pointer;
+ background:radial-gradient(circle,#123e57 0%,#071523 48%,#050b14 72%);
+ box-shadow:0 0 20px #00cfff55,inset 0 0 25px #00cfff33;
+ animation:pulse 3s infinite;
+}
+.core span{font-size:42px;letter-spacing:3px;color:#a8f2ff}
+@keyframes pulse{
+ 50%{box-shadow:0 0 38px #00cfff99,inset 0 0 35px #00cfff55}
+}
+#status{letter-spacing:4px;color:#65e7ff;font-size:13px}
+#message{min-height:40px;color:#9db9c9;font-size:14px;margin:20px 0}
+button{
+ background:#0b2030;color:#a8f2ff;border:1px solid #1e8ba8;
+ border-radius:10px;padding:14px 16px;font-size:14px;
+ margin:5px;cursor:pointer
+}
+button:active{background:#16445b}
+#input{
+ width:100%;padding:14px;background:#091724;color:white;
+ border:1px solid #1e5368;border-radius:10px;font-size:15px
+}
+.small{font-size:11px;color:#66889a;margin-top:28px;line-height:1.7}
+</style>
+</head>
+<body>
+<main>
+ <div class="tag">PERSONAL AI SYSTEM</div>
+ <h1>J.A.R.V.I.S.</h1>
+ <div style="color:#7194a7;font-size:12px">JUST A RATHER VERY INTELLIGENT SYSTEM</div>
+ <div id="clock">00:00:00</div>
+ <div id="date"></div>
+
+ <div class="core" id="core" role="button" tabindex="0"
+      aria-label="Wake or sleep JARVIS">
+   <span>J</span>
+ </div>
+ <div id="status">SLEEPING</div>
+ <div id="message">Tap the core to initialise the system.</div>
+
+ <input id="input" placeholder="Enter a command..." autocomplete="off">
+ <div>
+  <button id="send">EXECUTE</button>
+  <button id="voice">VOICE INPUT</button>
+ </div>
+ <div>
+  <button id="youtube">OPEN YOUTUBE</button>
+  <button id="sleep">SLEEP MODE</button>
+ </div>
+ <div class="small">
+  JARVIS LOCAL INTERFACE · OFFLINE DASHBOARD<br>
+  AI NETWORK CONNECTION NOT YET CONFIGURED
+ </div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let awake=false;
+function updateClock(){
+ const now=new Date();
+ $("clock").textContent=now.toLocaleTimeString();
+ $("date").textContent=now.toLocaleDateString(undefined,{
+  weekday:"long",year:"numeric",month:"long",day:"numeric"
+ });
+}
+updateClock();
+setInterval(updateClock,1000);
+
+function say(text){
+ $("message").textContent=text;
+ if("speechSynthesis" in window){
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang="en-GB";
+  u.rate=0.95;
+  speechSynthesis.speak(u);
+ }
+}
+function toggle(){
+ awake=!awake;
+ $("status").textContent=awake?"LISTENING":"SLEEPING";
+ $("message").textContent=awake?
+  "Systems online, Sir. Awaiting your command.":
+  "JARVIS is in sleep mode.";
+ if(awake) say("Systems online, Sir. How may I assist you?");
+ else if("speechSynthesis" in window) speechSynthesis.cancel();
+}
+$("core").addEventListener("click",toggle);
+$("core").addEventListener("keydown",e=>{
+ if(e.key==="Enter"||e.key===" "){e.preventDefault();toggle()}
+});
+$("sleep").onclick=()=>{
+ awake=false;
+ $("status").textContent="SLEEPING";
+ $("message").textContent="JARVIS is in sleep mode.";
+ if("speechSynthesis" in window) speechSynthesis.cancel();
+};
+function execute(){
+ if(!awake){$("message").textContent="Tap the core to wake JARVIS first.";return}
+ const cmd=$("input").value.trim().toLowerCase();
+ if(!cmd)return;
+ if(cmd.includes("time"))say("The time is "+$("clock").textContent+", Sir.");
+ else if(cmd.includes("date"))say("Today is "+$("date").textContent+", Sir.");
+ else if(cmd.includes("youtube")){
+  say("Opening YouTube, Sir.");
+  window.open("https://m.youtube.com/","_blank");
+ }
+ else if(cmd.includes("hello")||cmd.includes("jarvis"))
+  say("At your service, Sir. The online AI brain is not connected yet.");
+ else say("Command received, Sir. An AI connection is required for that task.");
+ $("input").value="";
+}
+$("send").onclick=execute;
+$("input").addEventListener("keydown",e=>{if(e.key==="Enter")execute()});
+$("youtube").onclick=()=>window.open("https://m.youtube.com/","_blank");
+$("voice").onclick=()=>{
+ if(!awake){$("message").textContent="Wake JARVIS first.";return}
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){$("message").textContent="Voice recognition is not supported in this browser. Try Chrome.";return}
+ const rec=new SR();
+ rec.lang="en-GB";
+ rec.onstart=()=>{$("status").textContent="LISTENING";$("message").textContent="Listening, Sir...";};
+ rec.onresult=e=>{$("input").value=e.results[0][0].transcript;execute()};
+ rec.onerror=()=>{$("message").textContent="Voice input unavailable. Check browser permission or internet connection.";};
+ rec.onend=()=>{$("status").textContent=awake?"LISTENING":"SLEEPING";};
+ try{rec.start()}catch(e){$("message").textContent="Please try voice input again."}
+};
+</script>
+</body>
+  </html>
+  

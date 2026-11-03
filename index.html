@@ -87,15 +87,45 @@ function updateClock(){
 updateClock();
 setInterval(updateClock,1000);
 
-function say(text){
- $("message").textContent=text;
- if("speechSynthesis" in window){
+
+function say(text) {
+  $("message").textContent = text;
+
+  if (!("speechSynthesis" in window)) return;
+
   speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang="en-GB";
-  u.rate=0.95;
+
+  const voices = speechSynthesis.getVoices();
+
+  const jarvisVoice =
+    voices.find(v =>
+      v.lang.toLowerCase() === "en-gb" &&
+      /voice 3/i.test(v.name)
+    ) ||
+    voices.find(v =>
+      v.lang.toLowerCase() === "en-gb"
+    );
+
+  const u = new SpeechSynthesisUtterance(text);
+
+  u.lang = "en-GB";
+  if (jarvisVoice) u.voice = jarvisVoice;
+
+  u.rate = 0.88;
+  u.pitch = 0.85;
+  u.volume = 1;
+
+  u.onstart = () => {
+    $("status").textContent = "SPEAKING";
+  };
+
+  u.onend = () => {
+    if (awake) $("status").textContent = "LISTENING";
+  };
+
   speechSynthesis.speak(u);
- }
+}
+ 
 }
 function toggle(){
  awake=!awake;
